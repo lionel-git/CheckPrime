@@ -8,8 +8,8 @@ namespace CheckPrime
 {
     class ProductPrime
     {
-        // Product of some primes, Ex: Product = p1.p4.p8.p17
-        public ulong Product { get; set; }
+        // N/(p1.p7.p17)
+        public ulong InvProduct { get; set; }
         // Index of last prime in product, Ex: 17 in the example
         public int IndexLastPrime { get; set; }
     }

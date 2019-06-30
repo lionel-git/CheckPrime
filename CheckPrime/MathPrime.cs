@@ -89,10 +89,6 @@ namespace CheckPrime
                 throw new Exception("Invalid square root!!"); // Check float approx
             var primes = GeneratePrimes(sqrtN);
 
-            var limits = new ulong[primes.Count];
-            for (int i = 0; i < primes.Count; i++)
-                limits[i] = N / primes[i];
-
             Logger.Info($"sqrtN = {sqrtN}");
             Logger.Info($"primes.Count: {primes.Count}");
             Logger.Info($"Last prime: {primes[primes.Count-1]}");
@@ -100,7 +96,7 @@ namespace CheckPrime
             var Ndiv2 = N / 2 + 1;
 
             var productPrimes = new ConcurrentBag<ProductPrime>();
-            productPrimes.Add(new ProductPrime() { Product = 1, IndexLastPrime = -1 });
+            productPrimes.Add(new ProductPrime() { InvProduct = N, IndexLastPrime = -1 });
                         
             long totalSum = 0;
             long sign = +1;
@@ -115,17 +111,18 @@ namespace CheckPrime
                     int primeIndex = productPrime.IndexLastPrime + 1;
                     ulong localSum = 0;
                     while (primeIndex < primes.Count)
-                    {                                             
-                        if (productPrime.Product <= limits[primeIndex]) // Eqv to productPrime.Product * primes[primeIndex] <= N
+                    {
+                        if (productPrime.InvProduct >= 2 * primes[primeIndex])
                         {
-                            // * Product ~ N, prime ~sqrt(N) donc newProduct ~ N*sqrt(N) 
-                            ulong newProduct = productPrime.Product * primes[primeIndex]; // newProduct <= N
-                            if (newProduct >= Ndiv2)
-                                localSum += 1;
-                            else
-                                localSum += N / newProduct;
-                            if (primeIndex + 1 < primes.Count && newProduct <= limits[primeIndex + 1])  // Eqv to (newProduct * primes[primeIndex+1] <= N)
-                                newProductPrimes.Add(new ProductPrime() { Product = newProduct, IndexLastPrime = primeIndex });
+                            ulong newInvProduct = productPrime.InvProduct / primes[primeIndex];
+                            localSum += newInvProduct;
+                            if (primeIndex + 1 < primes.Count && newInvProduct >= primes[primeIndex + 1]) 
+                                newProductPrimes.Add(new ProductPrime() { InvProduct = newInvProduct, IndexLastPrime = primeIndex });
+                            primeIndex++;
+                        }
+                        else if (productPrime.InvProduct >= primes[primeIndex])
+                        {
+                            localSum += 1;
                             primeIndex++;
                         }
                         else
