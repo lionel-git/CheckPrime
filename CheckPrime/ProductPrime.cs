@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace CheckPrime
 {
+    // Plutot stocker (minIndex, maxIndex) sur LastIndex
     class ProductPrime
     {
         // N/(p1.p7.p17)

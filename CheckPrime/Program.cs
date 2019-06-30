@@ -41,22 +41,32 @@ namespace CheckPrime
 
         static void Main(string[] args)
         {
-            Logger.Info("==================================================");
-            var sw = new Stopwatch();            
-            long totalTime = 0;
-            int testCase = 12;
-            for (int i = testCase; i <= Math.Min(testCase, BenchMark.Count); i++)
+            try
             {
-                Logger.Info($"{BenchMark[i].N} (10^{Math.Log10(BenchMark[i].N)}) => ");
-                sw.Restart();
-                var count = MathPrime.Count(BenchMark[i].N);
-                sw.Stop();
-                totalTime += sw.ElapsedMilliseconds;
-                Logger.Info($"Count={count} ok?={count == (long)BenchMark[i].Bench}  ({sw.ElapsedMilliseconds} ms)");
+                Logger.Info("==================================================");
+                var sw = new Stopwatch();
+                long totalTime = 0;
+                int testCase = 11;
+                for (int i = 0; i <= Math.Min(testCase, BenchMark.Count); i++)
+                {
+                    Logger.Info($"====== {BenchMark[i].N} (10^{Math.Log10(BenchMark[i].N)}) => ");
+                    sw.Restart();
+                    var count = MathPrime.Count(BenchMark[i].N);
+                    sw.Stop();
+                    totalTime += sw.ElapsedMilliseconds;
+                    bool isOk = (count == (long)BenchMark[i].Bench);
+                    Logger.Info($"Count={count} ok?={isOk}  ({sw.ElapsedMilliseconds} ms)");
+                    if (!isOk)
+                        throw new Exception("Check is incorrect!!!");
+                }
+                Logger.Info($"Total time: {totalTime / 1000.0:0.00} s");
+                var myProcess = Process.GetCurrentProcess();
+                Logger.Info($"Max working set: {myProcess.PeakWorkingSet64 / (1024.0 * 1024.0):0.0} Mo");
             }
-            Logger.Info($"Total time: {totalTime / 1000.0:0.00} s");
-            var myProcess = Process.GetCurrentProcess();
-            Logger.Info($"Max working set: {myProcess.PeakWorkingSet64/(1024.0*1024.0):0.0} Mo");
+            catch (Exception e)
+            {
+                Logger.Error(e);
+            }
         }
     }
 }

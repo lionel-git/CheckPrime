@@ -112,6 +112,11 @@ namespace CheckPrime
                     ulong localSum = 0;
                     while (primeIndex < primes.Count)
                     {
+                        // Calculer les bornes tq pk~invProduct, 2*pj ~ InvProduct, 3*pi ~ InvProduct
+                        // x > pk => 0
+                        // x ds [pj,pk] => 1
+                        // x ds [pi,pj] => 2
+
                         if (productPrime.InvProduct >= 2 * primes[primeIndex])
                         {
                             ulong newInvProduct = productPrime.InvProduct / primes[primeIndex];
