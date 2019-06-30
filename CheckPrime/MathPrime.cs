@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -77,14 +78,14 @@ namespace CheckPrime
 
             var Ndiv2 = N / 2 + 1;
 
-            var productPrimes = new List<ProductPrime>();
+            var productPrimes = new ConcurrentBag<ProductPrime>();
             productPrimes.Add(new ProductPrime() { Product = 1, IndexLastPrime = -1 });
-            var newProductPrimes = new List<ProductPrime>();
-            
+                        
             long totalSum = 0;
             long sign = +1;
             do
             {
+                var newProductPrimes = new ConcurrentBag<ProductPrime>();
                 ulong sum = 0;
                 foreach (var productPrime in productPrimes)
                 {
@@ -109,12 +110,9 @@ namespace CheckPrime
 
                 totalSum += sign * (long)sum;
                 sign = -sign;
-
-                // Exchange pointers
-                var tmp = productPrimes;
-                productPrimes = newProductPrimes;
-                newProductPrimes = tmp;
-                newProductPrimes.Clear();
+                
+                // point to new list
+                productPrimes = newProductPrimes;                
             }
             while (productPrimes.Count > 0);
             return (long)(N - 1) - totalSum + primes.Count;
