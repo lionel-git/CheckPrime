@@ -1,6 +1,8 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -10,6 +12,8 @@ namespace CheckPrime
 {
     public class MathPrime
     {
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(MathPrime));
+
         private const int UlongBits = 64;
         private const int UlongShift = 6; // 2^6=64
         private const ulong UlongMask = 63; // 5 bits set to 1
@@ -32,7 +36,6 @@ namespace CheckPrime
         public static List<ulong> GeneratePrimes(ulong N)
         {
             var b = new ulong[(N / UlongBits) + 1];
-            //Console.WriteLine($"L={b_.Length}");
 
             // Init table
             ulong sqrtN = (ulong)Math.Sqrt((double)N) + 1;
@@ -90,9 +93,9 @@ namespace CheckPrime
             for (int i = 0; i < primes.Count; i++)
                 limits[i] = N / primes[i];
 
-            Console.WriteLine($"sqrtN = {sqrtN}");
-            Console.WriteLine($"primes.Count: {primes.Count}");
-            Console.WriteLine($"Last prime: {primes[primes.Count-1]}");
+            Logger.Info($"sqrtN = {sqrtN}");
+            Logger.Info($"primes.Count: {primes.Count}");
+            Logger.Info($"Last prime: {primes[primes.Count-1]}");
 
             var Ndiv2 = N / 2 + 1;
 
@@ -101,13 +104,13 @@ namespace CheckPrime
                         
             long totalSum = 0;
             long sign = +1;
-            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = 8 };
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = Environment.ProcessorCount };
             do
             {
                 var newProductPrimes = new ConcurrentBag<ProductPrime>();
                 ulong sum = 0;
                 object sumMutex = new object();
-                Parallel.ForEach(productPrimes/*, parallelOptions*/, (productPrime) =>
+                Parallel.ForEach(productPrimes, parallelOptions, (productPrime) =>
                 {
                     int primeIndex = productPrime.IndexLastPrime + 1;
                     ulong localSum = 0;
@@ -136,12 +139,12 @@ namespace CheckPrime
                 
                 totalSum += sign * (long)sum;
                 sign = -sign;
-                Console.WriteLine($"totalSum= {totalSum} sum={sum}");
+                Logger.Info($"totalSum= {totalSum} sum={sum}");
 
                 // point to new list
                 productPrimes = newProductPrimes;
-                Console.WriteLine($"New count={newProductPrimes.Count}");
-                Console.WriteLine();
+                Logger.Info($"New count={newProductPrimes.Count}");
+                Logger.Info("");                
             }
             while (productPrimes.Count > 0);
             return (long)(N - 1) - totalSum + primes.Count;

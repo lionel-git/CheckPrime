@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace CheckPrime
 
     class Program
     {
+        private static readonly ILog Logger = LogManager.GetLogger(typeof(Program));
+
         // cf https://en.wikipedia.org/wiki/Prime-counting_function
 
         private static readonly List<TestCase> BenchMark = new List<TestCase>()
@@ -38,20 +41,22 @@ namespace CheckPrime
 
         static void Main(string[] args)
         {
-            var sw = new Stopwatch();
-            var primes = MathPrime.GeneratePrimes(31);
+            Logger.Info("==================================================");
+            var sw = new Stopwatch();            
             long totalTime = 0;
             int testCase = 12;
             for (int i = testCase; i <= Math.Min(testCase, BenchMark.Count); i++)
             {
-                Console.WriteLine($"{BenchMark[i].N} (10^{Math.Log10(BenchMark[i].N)}) => ");
+                Logger.Info($"{BenchMark[i].N} (10^{Math.Log10(BenchMark[i].N)}) => ");
                 sw.Restart();
                 var count = MathPrime.Count(BenchMark[i].N);
                 sw.Stop();
                 totalTime += sw.ElapsedMilliseconds;
-                Console.WriteLine($"{count} {sw.ElapsedMilliseconds} ms ok?={count == (long)BenchMark[i].Bench}");
+                Logger.Info($"Count={count} ok?={count == (long)BenchMark[i].Bench}  ({sw.ElapsedMilliseconds} ms)");
             }
-            Console.WriteLine($"Total time: {totalTime / 1000.0:0.00} s");
+            Logger.Info($"Total time: {totalTime / 1000.0:0.00} s");
+            var myProcess = Process.GetCurrentProcess();
+            Logger.Info($"Max working set: {myProcess.PeakWorkingSet64/(1024.0*1024.0):0.0} Mo");
         }
     }
 }
