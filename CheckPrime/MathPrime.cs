@@ -66,7 +66,7 @@ namespace CheckPrime
         // number of multiples of pi = [N/pi] with pi*pi <=N
         // But number of multiples of pi.pj counted twice remove [N/pi.pj]
         // Final formulae
-        // N - [N/pi] + [N/pi.pj] - [N/pi.pj.pk] + count(pi)
+        // (N - 1) - [N/pi] + [N/pi.pj] - [N/pi.pj.pk] + count(pi)  (N-1) because range is (2 ... N)
 
         public static long Count(ulong N)
         {
@@ -74,6 +74,8 @@ namespace CheckPrime
             if (!(sqrtN * sqrtN <= N && N < (sqrtN + 1) * (sqrtN + 1)))
                 throw new Exception("Invalid square root!!"); // Check float approx
             var primes = GeneratePrimes(sqrtN);
+
+            var Ndiv2 = N / 2 + 1;
 
             var productPrimes = new List<ProductPrime>();
             productPrimes.Add(new ProductPrime() { Product = 1, IndexLastPrime = -1 });
@@ -89,11 +91,13 @@ namespace CheckPrime
                     int primeIndex = productPrime.IndexLastPrime + 1;
                     while (primeIndex < primes.Count)
                     {
-                        ulong newProduct = productPrime.Product * primes[primeIndex];
-                        ulong q = N / newProduct;
-                        if (q > 0)
+                        ulong newProduct = productPrime.Product * primes[primeIndex];                        
+                        if (newProduct <= N)
                         {
-                            sum += q;
+                            if (newProduct >= Ndiv2)
+                                sum += 1;                            
+                            else
+                                sum += N / newProduct;
                             if (newProduct * primes[primeIndex] <= N)
                                 newProductPrimes.Add(new ProductPrime() { Product = newProduct, IndexLastPrime = primeIndex });
                             primeIndex++;
@@ -113,13 +117,7 @@ namespace CheckPrime
                 newProductPrimes.Clear();
             }
             while (productPrimes.Count > 0);
-            return (long)(N - 1) - totalSum + primes.Count; // N-1 because 1 is not prime (2,N)
+            return (long)(N - 1) - totalSum + primes.Count;
         }
-
-
-
-
-
-
     }
 }
