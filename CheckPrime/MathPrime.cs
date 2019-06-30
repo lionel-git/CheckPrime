@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace CheckPrime
@@ -69,12 +70,29 @@ namespace CheckPrime
         // Final formulae
         // (N - 1) - [N/pi] + [N/pi.pj] - [N/pi.pj.pk] + count(pi)  (N-1) because range is (2 ... N)
 
+        // Max ulong= 18_446_744_073_709_551_615 ~ 1.8*10^19
+        // Max long =  9_223_372_036_854_775_807 ~  9*10^18
+
+        // Cas N=10^13 
+        // sqrtN=10^6.5
+        // N*sqrt(N) =10^19.5 = 3.16*10^19 depasse ulong!!
+
         public static long Count(ulong N)
         {
+            if (N < 4)
+                return 0;
             var sqrtN = (ulong)Math.Sqrt(N);
             if (!(sqrtN * sqrtN <= N && N < (sqrtN + 1) * (sqrtN + 1)))
                 throw new Exception("Invalid square root!!"); // Check float approx
             var primes = GeneratePrimes(sqrtN);
+
+            var limits = new ulong[primes.Count];
+            for (int i = 0; i < primes.Count; i++)
+                limits[i] = N / primes[i];
+
+            Console.WriteLine($"sqrtN = {sqrtN}");
+            Console.WriteLine($"primes.Count: {primes.Count}");
+            Console.WriteLine($"Last prime: {primes[primes.Count-1]}");
 
             var Ndiv2 = N / 2 + 1;
 
@@ -83,36 +101,47 @@ namespace CheckPrime
                         
             long totalSum = 0;
             long sign = +1;
+            var parallelOptions = new ParallelOptions() { MaxDegreeOfParallelism = 8 };
             do
             {
                 var newProductPrimes = new ConcurrentBag<ProductPrime>();
                 ulong sum = 0;
-                foreach (var productPrime in productPrimes)
+                object sumMutex = new object();
+                Parallel.ForEach(productPrimes/*, parallelOptions*/, (productPrime) =>
                 {
                     int primeIndex = productPrime.IndexLastPrime + 1;
+                    ulong localSum = 0;
                     while (primeIndex < primes.Count)
-                    {
-                        ulong newProduct = productPrime.Product * primes[primeIndex];                        
-                        if (newProduct <= N)
+                    {                                             
+                        if (productPrime.Product <= limits[primeIndex]) // Eqv to productPrime.Product * primes[primeIndex] <= N
                         {
+                            // * Product ~ N, prime ~sqrt(N) donc newProduct ~ N*sqrt(N) 
+                            ulong newProduct = productPrime.Product * primes[primeIndex]; // newProduct <= N
                             if (newProduct >= Ndiv2)
-                                sum += 1;                            
+                                localSum += 1;
                             else
-                                sum += N / newProduct;
-                            if (newProduct * primes[primeIndex] <= N)
+                                localSum += N / newProduct;
+                            if (primeIndex + 1 < primes.Count && newProduct <= limits[primeIndex + 1])  // Eqv to (newProduct * primes[primeIndex+1] <= N)
                                 newProductPrimes.Add(new ProductPrime() { Product = newProduct, IndexLastPrime = primeIndex });
                             primeIndex++;
                         }
                         else
                             primeIndex = primes.Count;
                     }
-                }
-
+                    lock(sumMutex)
+                    {
+                        sum += localSum;                        
+                    } 
+                });
+                
                 totalSum += sign * (long)sum;
                 sign = -sign;
-                
+                Console.WriteLine($"totalSum= {totalSum} sum={sum}");
+
                 // point to new list
-                productPrimes = newProductPrimes;                
+                productPrimes = newProductPrimes;
+                Console.WriteLine($"New count={newProductPrimes.Count}");
+                Console.WriteLine();
             }
             while (productPrimes.Count > 0);
             return (long)(N - 1) - totalSum + primes.Count;
